@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+# Standard Library
 import inspect
 
 
@@ -80,3 +81,18 @@ class ProposalVotesFilter:
     _NO_VOTES = [0, "No votes"]
     _MIN_ONE_VOTE = [1, "Minimum 1 vote"]
     _SORT = [2, "Sort by vote value"]
+
+
+class ConferenceSettingConstants:
+    ALLOW_PUBLIC_VOTING_ON_PROPOSALS = {
+        "name": "allow_public_voting_on_proposals",
+        "value": True,
+        "description": "Allow public to vote on proposals"}
+
+    DISPLAY_PROPOSALS_IN_PUBLIC = {"name": "display_proposals_in_public",
+                                   "value": True,
+                                   "description": "Display proposals in public"}
+
+    ALLOW_PLUS_ZERO_REVIEWER_VOTE = {"name": "allow_plus_zero_reviewer_vote",
+                                     "value": True,
+                                     "description": "Allow +0 vote in reviewer votes"}

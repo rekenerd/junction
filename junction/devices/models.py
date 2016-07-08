@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
+# Standard Library
 import datetime
 
+# Third Party Stuff
 from django.db import models
-
-from junction.base.models import TimeAuditModel
-
+from django.utils.timezone import now
 from uuidfield import UUIDField
 
-# Create your models here.
+# Junction Stuff
+from junction.base.models import TimeAuditModel
 
 
 def expiry_time(expiry_mins=60):
-    return datetime.datetime.now() + datetime.timedelta(minutes=expiry_mins)
+    return now() + datetime.timedelta(minutes=expiry_mins)
 
 
 class Device(TimeAuditModel):

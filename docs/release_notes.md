@@ -1,11 +1,28 @@
 # Release Notes
 
-## [0.3.0-dev][0.3.0]
+## [0.4.0][0.4.0]
 
-__Date:__ unreleased
+- Fix filters on the proposal review form #418 (@ChillarAnand)
+- Update proposal urls to use hashids. The slug will now update itself when the title of proposal changes.
+- Conference duration is displayed in a short form.
+- Add ability to remove a casted vote on a proposal.
+- ...
+
+## [0.3.0][0.3.0]
+
+__Date:__ 31st March 2016
+
+__Features__
+
+- conference moderators can be added per conference using a `conference_moderator` management command.
+- Improved conference admin.
+- Basic REST API for accessing conference details and proposals.
+- REST API to submit feedback for a talk/workshop.
+- UI updates  
 
 __Fixes__
-- fix the tag filtering for all the proposal sections inside proposal list (#170)
+-  fix the tag filtering for all the proposal sections inside proposal list (#170)
+- Update proposal detail styling (#207)
 
 
 ## [0.2.0][0.2.0]
@@ -36,7 +53,8 @@ __Date:__ 8th February 2015
 
 - initial release with core functionality working
 
-[0.3.0]: https://github.com/pythonindia/junction/compare/0.2.0...master
+[0.4.0]: https://github.com/pythonindia/junction/compare/0.3.0...master
+[0.3.0]: https://github.com/pythonindia/junction/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/pythonindia/junction/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/pythonindia/junction/issues?q=milestone%3A%22release+0.1.0+-+initial+release%22
 

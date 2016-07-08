@@ -8,7 +8,6 @@ import logging
 from django.conf import settings
 from markdown2 import markdown
 
-
 # Junction Stuff
 from junction.base.emailer import send_email
 
@@ -31,7 +30,8 @@ def send_mail_for_new_comment(proposal_comment, host):
     login_url = '{}?next={}'.format(settings.LOGIN_URL, proposal.get_absolute_url())
     send_to = comment_recipients(proposal_comment)
     commenter = proposal_comment.commenter
-    proposal_comment.comment = markdown_to_html(proposal_comment.comment)
+    comment_type = proposal_comment.get_comment_type()
+    comment_html = markdown_to_html(proposal_comment.comment)
     for to in send_to:
         if to == proposal_comment.commenter:
             continue
@@ -42,8 +42,10 @@ def send_mail_for_new_comment(proposal_comment, host):
                             'login_url': login_url,
                             'proposal': proposal,
                             'comment': proposal_comment,
+                            'comment_html': comment_html,
                             'commenter': commenter,
-                            'by_author': commenter == proposal.author})
+                            'by_author': commenter == proposal.author,
+                            'comment_type': comment_type})
 
 
 def comment_recipients(proposal_comment):

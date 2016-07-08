@@ -14,8 +14,57 @@ input#id_remember {
     font-size: 1.2em;
     cursor: pointer;
 
-    &.active {
+    &.active{
         color: @junction-color-1;
-        cursor: default;
+
+        &:not(.can-remove-vote){
+          cursor: default;
+        }
     }
+}
+
+// Proposal Status
+// ----------------------------------------------------------------------------
+.status {
+  display: inline;
+  padding: .2em .6em .3em;
+  font-size: 75%;
+  font-weight: bold;
+  line-height: 1;
+  color: @label-color;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: .25em;
+  margin-left: 5px;
+}
+
+.status-2 {
+  .label-variant(@label-default-bg);
+}
+
+.status-3, .status-1 {
+  .label-variant(@label-success-bg);
+}
+
+.status-4 {
+  .label-variant(@label-info-bg);
+}
+
+// Breadcrumb
+// ----------------------------------------------------------------------------
+.breadcrumb--fixed .container-fluid{
+    margin-top: 27px;
+}
+.breadcrumb--fixed .breadcrumb {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: 90000;
+    border-radius: 0;
+}
+
+.green {
+    color: green;
 }

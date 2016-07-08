@@ -51,7 +51,7 @@
                               {{ proposal.author.username }}
                           {% endif %}
                           </b> |&nbsp;
-                    <i class="fa fa-calendar"></i> <b> {{ proposal.created_at|date:"d M, Y" }} </b>
+                    <i class="fa fa-calendar"></i> <b> <time datetime="{{ proposal.created_at|date:'c' }}" title="Created On">{{ proposal.created_at|date:"d M, Y" }}</time></b>
                 </small>
             </p>
 
@@ -90,10 +90,11 @@
 
     <hr class="hr-mini">
     <div class="row proposal-description">
+      {% if public_voting_setting %}
          <div class="col-sm-1 section--voting ">
             <div class="text-center">
                 {% if can_vote %}
-                  <a href="#" data-url="{{ proposal.get_up_vote_url }}" class="btn-vote js-proposal-upvote text-muted {% if vote_value == 1 %} active {% endif %}">
+                  <a href="#" title="Up Vote" data-url="{{ proposal.get_up_vote_url }}" class="btn-vote js-proposal-upvote can-remove-vote text-muted {% if vote_value == 1 %} active{% endif %}" data-remove-vote-url="{{ proposal.get_remove_vote_url }}">
                     <i class="fa fa-chevron-up fa-2x"></i>
                   </a>
                 {% else %}
@@ -101,12 +102,15 @@
                   <i class="fa fa-chevron-up fa-2x"></i>
                   </span>
                 {% endif %}
-                <h1 class="clear-margin text-muted proposal-vote-count">
-                    {{ proposal.get_votes_count }}
+                {% with proposal.get_votes_count as votes_count %}
+                <h1 class="clear-margin text-muted vote-count">
+                    {{ votes_count }}
                 </h1>
+                <div class="text-muted">Vote{{ votes_count|pluralize }}</div>
+                {% endwith %}
 
                 {% if can_vote %}
-                    <a href="#" data-url="{{ proposal.get_down_vote_url }}" class="btn-vote js-proposal-downvote text-muted {% if vote_value == -1 %} active {% endif %}">
+                    <a href="#" title="Down Vote" data-url="{{ proposal.get_down_vote_url }}" class="btn-vote can-remove-vote js-proposal-downvote text-muted {% if vote_value == -1 %} active{% endif %}" data-remove-vote-url="{{ proposal.get_remove_vote_url }}">
                     <i class="fa fa-chevron-down fa-2x"></i>
                     </a>
                 {% else %}
@@ -117,7 +121,8 @@
 
 
             </div>
-        </div>
+         </div>
+      {% endif %}
 
         <section class="col-sm-8 proposal-writeup">
           <div class="proposal-writeup--section">
@@ -168,7 +173,7 @@
           {% if is_section_reviewer or user.is_authenticated and user.is_superuser %}
               <div class="proposal-writeup--section">
                   <h4 class='heading'><b>Reviewer Actions:</b></h4>
-                  <a class='btn btn-primary' href="{{ proposal.get_vote_url }}">
+                  <a class='btn btn-primary btn-success' href="{{ proposal.get_vote_url }}">
                       Vote for proposal
                   </a>
               </div>
@@ -198,8 +203,14 @@
                         {{ proposal.get_target_audience_display }}
                     </td>
                 </tr>
+                <tr>
+                    <td class="text-muted text-right"><small>Last Updated:</small></td>
+                    <td>
+                        <time datetime="{{ proposal.modified_at|date:'c' }}">{{ proposal.modified_at|date:"d M, Y" }}</time>
+                    </td>
+                </tr>
             </table>
-            {% include "social_shares.html" %}
+            {% include "social_shares.html" with conference=proposal.conference %}
         </section>
     </div>
 

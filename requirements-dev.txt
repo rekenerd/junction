@@ -2,16 +2,21 @@
 
 # Testing
 # -------------------------------------------------
-mock==1.1.2
-factory_boy==2.5.2
+mock==2.0.0
+factory_boy==2.7.0
 flake8==2.4.1
-pytest-django==2.8.0
+pytest-django==2.9.1
+pytest-cov==2.2.1
 pytest-flakes==1.0.0
-pytest-pythonpath==0.7
-git+git://github.com/mverteuil/pytest-ipdb.git
 
-coverage==3.7.1
+coverage==4.1
 
 # Documentation
 # --------------------------------------------------
-mkdocs==0.14.0
+mkdocs==0.15.3
+bumpversion==0.5.3
+
+# Debugging
+# --------------------------------------------------
+ipdb==0.9.0
+

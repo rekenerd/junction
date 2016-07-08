@@ -39,8 +39,7 @@
             <div class="col-xs -12 col-sm-12 ">
                 <p class="meta">
                     <b class="text-muted">
-                        <span class="start_date">{{ conference.start_date }}</span> –
-                        <span class="end_date">{{ conference.end_date }}</span>
+                        {{ conference.duration_display }}
                     </b>
                     {% if is_proposal_reviewer %}
                         <a class='btn btn-primary pull-right' href="{% url 'proposal-dashboard' conference.slug %}">
@@ -64,35 +63,32 @@
 
             </div>
         </div>
-        <div class="row">
-            <div class="col-xs -12 col-sm-12 ">
-                <h2>Proposal Sections</h2>
-                <ol>
-                {% for section in proposal_sections %}
-                 <li><b>{{section.name}}</b> - {{section.description}}</li>
-                {% endfor %}
-                </ol>
-                <hr>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-xs -12 col-sm-12 ">
-                <h2>Proposal Types</h2>
-                <ol>
-                {% for types in proposal_types %}
-                 <li><b>{{types.name}}</b> - {{types.description}}</li>
-                {% endfor %}
-                </ol>
-            <hr>
-            </div>
-        </div>
 
+        <div class="row">
+            <div class="col-md-7">
+                <h4>Proposal Sections</h4>
+                <ol style="padding-left: 1.1em">
+                {% for item in proposal_sections %}
+                 <li><b>{{item.name}}</b>{% if item.description %} - <span class="text-muted">{{item.description}}</span></li>{% endif %}
+                {% endfor %}
+                </ol>
+            </div>
+            <div class="col-md-5">
+                <h4>Proposal Types</h4>
+                <ol style="padding-left: 1em">
+                {% for item in proposal_types %}
+                 <li><b>{{item.name}}</b>{% if item.description %} - <span class="text-muted">{{item.description}}</span></li>{% endif %}
+                {% endfor %}
+                </ol>
+            </div>
+        </div>
+        <hr>
+        <a name="proposals"></a>
+        <div class="row">
         {% if user.is_authenticated %}
             <a class='btn btn-primary' href="{% url 'profiles:dashboard' %}">My Proposals</a>
         {% endif %}
 
-        <a name="proposals"></a>
-        <div class="row">
         {% if is_filtered %}
             <a class='btn btn-info pull-left' href="./"> <i class="fa fa-list"></i> View all proposals <i class="fa fa-close"></i></a>
         {% endif %}
@@ -106,9 +102,14 @@
             {% include 'proposals/partials/proposal-list--selected-items.html' with proposals=selected_proposals title="Selected Proposals" display_status=False %}
         {% endif %}
 
-
         {% if public_proposals_list %}
-            {% include 'proposals/partials/proposal-list--items.html' with proposals=public_proposals_list title="List of Proposals" display_status=False %}
+
+            {% if filter_name %}
+                {% include 'proposals/partials/proposal-list--items.html' with proposals=public_proposals_list title=filter_name display_status=False %}
+            {% else %}
+                {% include 'proposals/partials/proposal-list--items.html' with proposals=public_proposals_list title='List of Proposals' display_status=False %}
+            {% endif %}
+
         {% else %}
             <hr>
             <h2>List of Proposals</h2>

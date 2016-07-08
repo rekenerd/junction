@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+# Standard Library
 import collections
+import uuid
+import io
 
+# Third Party Stuff
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
+from xlsxwriter.workbook import Workbook
 
-try:
-    import cStringIO as StringIO
-except ImportError:
-    from io import StringIO
+# Junction Stuff
 from junction.base.constants import ProposalReviewVote, ProposalStatus, ProposalVotesFilter
 from junction.conferences.models import Conference, ConferenceProposalReviewer
-from xlsxwriter.workbook import Workbook
 
 from .forms import ProposalVotesFilterForm
 from .models import (
@@ -23,13 +24,10 @@ from .models import (
     ProposalComment,
     ProposalSection,
     ProposalSectionReviewer,
-    ProposalSectionReviewerVoteValue,
+    ProposalSectionReviewerVoteValue
 )
 
 
-# Standard Library
-# Third Party Stuff
-# Junction Stuff
 @login_required
 @require_http_methods(['GET'])
 def proposals_dashboard(request, conference_slug):
@@ -191,7 +189,7 @@ def reviewer_votes_dashboard(request, conference_slug):
     proposal_sections = conference.proposal_sections.all()
     proposals_qs = Proposal.objects.select_related(
         'proposal_type', 'proposal_section', 'conference', 'author',
-    ).filter(conference=conference)
+    ).filter(conference=conference, status=ProposalStatus.PUBLIC)
 
     proposals = []
     s_items = collections.namedtuple('section_items', 'section proposals')
@@ -265,7 +263,7 @@ def export_reviewer_votes(request, conference_slug):
     proposal_sections = conference.proposal_sections.all()
     proposals_qs = Proposal.objects.select_related(
         'proposal_type', 'proposal_section', 'conference', 'author',
-    ).filter(conference=conference)
+    ).filter(conference=conference, status=ProposalStatus.PUBLIC)
     proposals_qs = sorted(
         proposals_qs, key=lambda x: x.get_reviewer_votes_sum(), reverse=True)
     vote_values_list = ProposalSectionReviewerVoteValue.objects.order_by(
@@ -274,7 +272,7 @@ def export_reviewer_votes(request, conference_slug):
                              for i in ProposalSectionReviewerVoteValue.objects.order_by('-vote_value'))
     header = ('Proposal Type', 'Title', 'Sum of reviewer votes', 'No. of reviewer votes') + \
         tuple(vote_values_desc) + ('Public votes count', 'Vote Comments')
-    output = StringIO.StringIO()
+    output = io.BytesIO()
 
     with Workbook(output) as book:
         for section in proposal_sections:
@@ -286,9 +284,6 @@ def export_reviewer_votes(request, conference_slug):
                 p for p in proposals_qs if p.proposal_section == section]
 
             for index, p in enumerate(section_proposals, 1):
-                if not p.is_public():
-                    continue
-
                 vote_details = tuple(p.get_reviewer_votes_count_by_value(v)
                                      for v in vote_values_list)
                 vote_comment = '\n'.join([comment.comment for comment in
@@ -315,7 +310,7 @@ def export_reviewer_votes(request, conference_slug):
         output.read(),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    response[
-        'Content-Disposition'] = "attachment; filename=reviewer_votes.xlsx"
+    file_name = str(uuid.uuid4())[:8]
+    response['Content-Disposition'] = "attachment; filename=junction-{}.xlsx".format(file_name)
 
     return response

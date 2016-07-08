@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+
 # Standard Library
-import uuid
-import threading
 import datetime
+import uuid
 
 # Third Party Stuff
 import factory
@@ -17,15 +17,6 @@ class Factory(factory.DjangoModelFactory):
         strategy = factory.CREATE_STRATEGY
         model = None
         abstract = True
-
-    _SEQUENCE = 1
-    _SEQUENCE_LOCK = threading.Lock()
-
-    @classmethod
-    def _setup_next_sequence(cls):
-        with cls._SEQUENCE_LOCK:
-            cls._SEQUENCE += 1
-        return cls._SEQUENCE
 
 
 class UserFactory(Factory):
@@ -47,7 +38,8 @@ class ConferenceFactory(Factory):
     name = factory.Sequence(lambda n: "conference{}".format(n))
     # slug = factory.LazyAttribute(lambda obj: slugify)
     # description =
-    start_date = fuzzy.FuzzyDate(datetime.date.today(), datetime.date(2017, 1, 1)).fuzz()
+    start_date = fuzzy.FuzzyDate(datetime.date.today(),
+                                 datetime.date(datetime.date.today().year + 1, 1, 1)).fuzz()
     end_date = start_date + datetime.timedelta(3)
     # logo
     status = factory.Iterator(list(dict(ConferenceStatus.CHOICES).keys()))
@@ -115,11 +107,10 @@ class ProposalFactory(Factory):
         strategy = factory.CREATE_STRATEGY
 
     conference = factory.SubFactory("tests.factories.ConferenceFactory")
-    proposal_section = factory.SubFactory(
-        "tests.factories.ProposalSectionFactory")
+    proposal_section = factory.SubFactory("tests.factories.ProposalSectionFactory")
     proposal_type = factory.SubFactory('tests.factories.ProposalTypeFactory')
     author = factory.SubFactory("tests.factories.UserFactory")
-    # title
+    title = factory.LazyAttribute(lambda x: "Propsoal %s" % x)
     # slug
     # description
     # target_audience
@@ -195,12 +186,39 @@ def create_conference(**kwargs):
     """ Create a conference """
     ProposalSectionReviewerVoteValueFactory.create(vote_value=1,
                                                    description="Good")
-    return ConferenceFactory.create(**kwargs)
+    ProposalSectionReviewerVoteValueFactory.create(vote_value=2,
+                                                   description="Good")
+    conference = ConferenceFactory.create(**kwargs)
+    start_date = kwargs.pop('start_date', None)
+    end_date = kwargs.pop('end_date', None)
+    if start_date and end_date:
+        workshop = ProposalTypeFactory.create(name="Workshop",
+                                              start_date=start_date,
+                                              end_date=end_date)
+        conference.proposal_types.add(workshop)
+        talks = ProposalTypeFactory.create(name="Talks",
+                                           start_date=start_date,
+                                           end_date=end_date)
+        conference.proposal_types.add(talks)
+        conference.save()
+
+    section = ProposalSectionFactory.create()
+    conference.proposal_sections.add(section)
+    section = ProposalSectionFactory.create()
+    conference.proposal_sections.add(section)
+    conference.save()
+    return conference
 
 
 def create_user(**kwargs):
     "Create an user along with her dependencies"
-    return UserFactory.create(**kwargs)
+    user = UserFactory.create(**kwargs)
+    password = kwargs.pop('password', None)
+    if password:
+        user.set_password(password)
+        user.is_active = True
+        user.save()
+    return user
 
 
 def create_proposal(**kwargs):

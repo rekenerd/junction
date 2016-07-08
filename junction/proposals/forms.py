@@ -9,17 +9,14 @@ from pagedown.widgets import PagedownWidget
 
 # Junction Stuff
 from junction.base.constants import (
+    ConferenceSettingConstants,
+    ProposalReviewerComment,
     ProposalReviewStatus,
     ProposalStatus,
     ProposalTargetAudience,
-    ProposalReviewerComment,
-    ProposalVotesFilter,
+    ProposalVotesFilter
 )
-from junction.proposals.models import (
-    ProposalSection,
-    ProposalType,
-    ProposalSectionReviewerVoteValue
-)
+from junction.proposals.models import ProposalSection, ProposalSectionReviewerVoteValue, ProposalType
 
 
 def _get_proposal_section_choices(conference, action="edit"):
@@ -44,9 +41,21 @@ def _get_proposal_type_choices(conference, action='edit'):
                     conferences=conference)]
 
 
-def _get_proposal_section_reviewer_vote_choices():
-    return [(i.vote_value, '{} ({})'.format(i.description, i.vote_value))
-            for i in ProposalSectionReviewerVoteValue.objects.all()]
+def _get_proposal_section_reviewer_vote_choices(conference):
+    allow_plus_zero_vote = ConferenceSettingConstants.ALLOW_PLUS_ZERO_REVIEWER_VOTE
+    plus_zero_vote_setting = conference.conferencesetting_set.filter(
+        name=allow_plus_zero_vote['name']).first()
+    if plus_zero_vote_setting:
+        plus_zero_vote_setting_value = plus_zero_vote_setting.value
+    else:
+        plus_zero_vote_setting_value = True
+    values = []
+    for i in ProposalSectionReviewerVoteValue.objects.all():
+        if i.vote_value == 0 and not plus_zero_vote_setting_value:
+            continue
+        values.append((i.vote_value, '{} ({})'.format(
+            i.description, i.vote_value)))
+    return values
 
 
 class HorizRadioRenderer(forms.RadioSelect.renderer):
@@ -149,13 +158,14 @@ class ProposalReviewerVoteForm(forms.Form):
     """
     vote_value = forms.ChoiceField(widget=forms.RadioSelect())
     comment = forms.CharField(
-        widget=forms.Textarea,
-        required=False,
+        widget=forms.Textarea(attrs={'minlength': '30'}),
         help_text="Leave a comment justifying your vote.",
     )
 
-    def __init_(self):
-        choices = _get_proposal_section_reviewer_vote_choices()
+    def __init__(self, *args, **kwargs):
+        conference = kwargs.pop('conference', None)
+        super(ProposalReviewerVoteForm, self).__init__(*args, **kwargs)
+        choices = _get_proposal_section_reviewer_vote_choices(conference)
         self.fields['vote_value'].choices = choices
 
 
@@ -163,13 +173,17 @@ class ProposalTypesChoices(forms.Form):
     """
     Base proposal form with proposal sections & types.
     """
-    proposal_section = forms.ChoiceField(widget=forms.Select(attrs={'class': 'dropdown'}))
-    proposal_type = forms.ChoiceField(widget=forms.Select(attrs={'class': 'dropdown'}))
+    proposal_section = forms.ChoiceField(widget=forms.Select(
+        attrs={'class': 'dropdown'}))
+    proposal_type = forms.ChoiceField(widget=forms.Select(
+        attrs={'class': 'dropdown'}))
 
     def __init__(self, conference, *args, **kwargs):
         super(ProposalTypesChoices, self).__init__(*args, **kwargs)
-        self.fields['proposal_section'].choices = _get_proposal_section_choices(conference)
-        self.fields['proposal_type'].choices = _get_proposal_type_choices(conference)
+        self.fields['proposal_section'].choices = _get_proposal_section_choices(
+            conference)
+        self.fields['proposal_type'].choices = _get_proposal_type_choices(
+            conference)
 
 
 class ProposalsToReviewForm(ProposalTypesChoices):
@@ -178,9 +192,14 @@ class ProposalsToReviewForm(ProposalTypesChoices):
     """
     reviewer_comment = forms.ChoiceField(widget=forms.Select(attrs={'class': 'dropdown'}))
 
-    def __init__(self, conference, *args, **kwargs):
+    def __init__(self, conference, proposal_sections, *args, **kwargs):
         super(ProposalsToReviewForm, self).__init__(conference, *args, **kwargs)
+        ps_choices = [(str(ps.id), ps.name) for ps in proposal_sections]
         self.fields['reviewer_comment'].choices = ProposalReviewerComment.CHOICES
+        self.fields['proposal_section'].choices = ps_choices
+
+        for name, field in list(self.fields.items()):
+            field.choices.insert(0, ('all', 'All'))
 
 
 class ProposalVotesFilterForm(ProposalTypesChoices):

@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+# Standard Library
 from datetime import datetime
-from simple_history.models import HistoricalRecords
 
 # Third Party Stuff
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.template.defaultfilters import slugify
 from django.utils.encoding import python_2_unicode_compatible
 from django_extensions.db.fields import AutoSlugField
+from hashids import Hashids
+from simple_history.models import HistoricalRecords
 
 # Junction Stuff
-from junction.base.constants import (
-    ProposalReviewStatus,
-    ProposalStatus,
-    ProposalTargetAudience,
-    ProposalUserVoteRole
-)
+from junction.base.constants import ProposalReviewStatus, ProposalStatus, ProposalTargetAudience, ProposalUserVoteRole
 from junction.base.models import AuditModel, TimeAuditModel
 from junction.conferences.models import Conference, ConferenceProposalReviewer
 
@@ -27,7 +25,7 @@ class ProposalSection(AuditModel):
 
     """ List of Proposal Sections"""
     name = models.CharField(max_length=255, verbose_name="Proposal Section Name")
-    description = models.TextField(default="")
+    description = models.TextField(default="", blank=True)
     active = models.BooleanField(default=True, verbose_name="Is Active?")
     conferences = models.ManyToManyField(to=Conference, related_name='proposal_sections')
 
@@ -53,7 +51,7 @@ class ProposalType(AuditModel):
 
     """ List of Proposal Types """
     name = models.CharField(max_length=255, verbose_name="Proposal Type Name")
-    description = models.TextField(default="")
+    description = models.TextField(default="", blank=True)
     active = models.BooleanField(default=True, verbose_name="Is Active?")
     conferences = models.ManyToManyField(to=Conference, related_name='proposal_types')
     start_date = models.DateField(default=datetime.now, verbose_name="Start Date")
@@ -100,9 +98,16 @@ class Proposal(TimeAuditModel):
         # TODO: Fix with proper enum
         return self.status == 2
 
+    def get_slug(self):
+        return slugify(self.title)
+
+    def get_hashid(self):
+        hashids = Hashids(min_length=5)
+        return hashids.encode(self.id)
+
     def get_absolute_url(self):
         return reverse('proposal-detail',
-                       args=[self.conference.slug, self.slug])
+                       args=[self.conference.slug, self.get_slug(), self.get_hashid()])
 
     def get_update_url(self):
         return reverse('proposal-update',
@@ -128,12 +133,17 @@ class Proposal(TimeAuditModel):
         return reverse('proposal-vote-down',
                        args=[self.conference.slug, self.slug])
 
+    def get_remove_vote_url(self):
+        return reverse('proposal-vote-remove',
+                       args=[self.conference.slug, self.slug])
+
     def get_comments_count(self):
         """ Show only public comments count """
         return ProposalComment.objects.filter(proposal=self,
                                               deleted=False,
                                               private=False,
-                                              vote=False).count()
+                                              vote=False,
+                                              reviewer=False).count()
 
     def get_reviews_comments_count(self):
         """ Show only private comments count """
@@ -215,20 +225,6 @@ class ProposalCommentQuerySet(models.QuerySet):
         return self.filter(reviewer=True, vote=False)
 
 
-class ProposalCommentManager(models.Manager):
-    def get_queryset(self):
-        return ProposalCommentQuerySet(self.model, using=self._db)
-
-    def get_public_comments(self):
-        return self.get_queryset().get_public_comments()
-
-    def get_reviewers_comments(self):
-        return self.get_queryset().get_reviewers_comments()
-
-    def get_reviewers_only_comments(self):
-        return self.get_queryset().get_reviewers_only_comments()
-
-
 @python_2_unicode_compatible
 class ProposalSectionReviewerVoteValue(AuditModel):
     """ Proposal reviewer vote choices. """
@@ -273,7 +269,7 @@ class ProposalComment(TimeAuditModel):
     comment = models.TextField()
     deleted = models.BooleanField(default=False, verbose_name="Is Deleted?")
 
-    objects = ProposalCommentManager()
+    objects = ProposalCommentQuerySet.as_manager()
 
     def __str__(self):
         return "[{} by {}] {}".format(self.comment,
@@ -295,6 +291,18 @@ class ProposalComment(TimeAuditModel):
         reviewer = ConferenceProposalReviewer.objects.get(conference_id=self.proposal.conference_id,
                                                           reviewer_id=self.commenter_id)
         return reviewer.nick
+
+    def get_comment_type(self):
+        if self.deleted:
+            return 'Deleted'
+        elif self.vote:
+            return 'Vote'
+        elif self.reviewer:
+            return 'Reviewer Only'
+        elif self.private:
+            return 'Review'
+        else:
+            return 'Public'
 
 
 @python_2_unicode_compatible
