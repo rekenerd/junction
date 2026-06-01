@@ -1,6 +1,5 @@
-# Third Party Stuff
 import pytest
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
 
@@ -8,8 +7,8 @@ pytestmark = pytest.mark.django_db
 def test_public_urls(client):
 
     public_urls = [
-        reverse('page-home'),
-        '/nimda/login/',
+        reverse("page-home"),
+        "/nimda/login/",
     ]
 
     for url in public_urls:

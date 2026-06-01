@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load bootstrap3 %}
+{% load markdown_deux_tags %}
 
-{% load django_markdown %}
-{% load static from staticfiles %}
+
+{% load static  %}
 {% load django_bootstrap_breadcrumbs %}
 
 {% block head_title %} {{ conference.name }} proposals to review {% endblock %}
@@ -40,6 +41,12 @@
             {% if proposals_to_review %}
                 <h2>Proposals To Review</h2>
                 <hr>
+                <p>Your sections to review are</p>
+                {% for section in proposal_reviewer_sections %}
+                    <b>{{ section.name }}</b><br/>
+                {% endfor %}
+                <br/>
+                <br/>
                 <div id="filter">
                     <form method="POST" action="" class="form-inline">
                         {% csrf_token %}

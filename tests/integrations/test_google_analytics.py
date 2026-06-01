@@ -1,16 +1,15 @@
-# Third Party Stuff
 import pytest
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
 
 
 def test_google_analytics_rendering(client, settings):
-    url = reverse('page-home')
+    url = reverse("page-home")
 
     response = client.get(url)
-    assert b'UA-MY-ID' not in response.content
+    assert b"UA-MY-ID" not in response.content
 
-    settings.SITE_VARIABLES['google_analytics_id'] = 'UA-MY-ID'
+    settings.SITE_VARIABLES["google_analytics_id"] = "UA-MY-ID"
     response = client.get(url)
-    assert b'UA-MY-ID' in response.content
+    assert b"UA-MY-ID" in response.content

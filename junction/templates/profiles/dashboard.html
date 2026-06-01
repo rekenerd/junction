@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 
-{% load django_markdown %}
-{% load static from staticfiles %}
+
+
+{% load static  %}
 {% load django_bootstrap_breadcrumbs %}
 {% load proposal_filters %}
 
@@ -17,7 +18,8 @@
 
 {% block breadcrumbs %}
     {{ block.super }}
-    {% breadcrumb "Dashboard" "user-proposals-list" %}
+    <!-- breadcrumb takes 2 mandatory arguments (label & viewname)  -->
+    {% breadcrumb "Dashboard" "dummy-url" %}
 {% endblock %}
 
 {% block navbar_logo %}
@@ -34,7 +36,7 @@
             <br>
             {% if conf_proposals %}
                 {% for conference,proposals in conf_proposals.items %}
-                <h3><a href="{% url 'proposals-list' conference|slugify %}">{{ conference }}</a></h3>
+                <h3><a href="{% url 'proposals-list' proposals.0.conference.slug %}">{{ conference }}</a></h3>
                 {% for proposal in proposals %}
         <div class="row user-proposals proposal" data-type="{{proposal.proposal_type}}" data-comment="{{proposal|reviewer_comments:request.user}}">
             <div class="col-xs-12" >
@@ -94,7 +96,7 @@
                                         {{ proposal.author.username }}
                                     {% endif %}
                                 </b> |&nbsp;
-                                <i class="fa fa-calendar"></i> <b>{{ proposal.created_at|date:"d M, Y" }}</b>
+                                <i class="fa fa-calendar"></i> <b title="{{ proposal.created_at|date:'d M Y, H:i' }}">{{ proposal.created_at|date:"d M, Y" }}</b>
                             </small>
                         </div>
                     </div>

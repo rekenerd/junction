@@ -1,11 +1,32 @@
-FROM ubuntu:14.04
-MAINTAINER Anuvrat Parashar "anuvrat@anuvrat.in"
+FROM python:3.10-slim-buster
 
-RUN apt-get update && apt-get -y upgrade && apt-get install -y git python2.7 python-pip python-dev postgresql-server-dev-all
-ADD requirements.txt /srv/requirements.txt
-ADD requirements-dev.txt /srv/requirements-dev.txt
-WORKDIR /srv/
-RUN pip install -r /srv/requirements.txt
-RUN rm -rf /usr/local/lib/python2.7/dist-packages/requests
-RUN pip install -r /srv/requirements-dev.txt
+WORKDIR /code
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        postgresql-client \
+        build-essential \
+        nodejs \
+        npm \
+        libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /code/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install requirements for running tests
+COPY ./tools/requirements-test.txt /code/
+RUN pip install --no-cache-dir -r requirements-test.txt
+
+RUN npm install -g yarn
+RUN npm install -g grunt-cli
+
+COPY . /code/
+
+RUN chmod +x bin/install-static.sh
+RUN bin/install-static.sh
+# not getting used at this moment
+RUN chmod +x bin/wait-for-it.sh
+
+ENV PYTHONUNBUFFERED=1

@@ -28,20 +28,23 @@ def patch_urltag():
 
 
 def patch_urlresolvers():
-    from django.core import urlresolvers  # noqa
+    from django.urls import get_urlconf, get_resolver    # noqa
     from django.conf import settings  # noqa
-
-    if hasattr(urlresolvers, "_patched"):
+    urlconf = get_urlconf()
+    resolver = get_resolver(urlconf)
+    if hasattr(resolver, "_patched"):
         return
 
-    old_reverse = urlresolvers.reverse
+    old_reverse = resolver.reverse
 
-    def new_reverse(viewname, urlconf=None, args=None, kwargs=None, prefix=None, current_app=None):
-        path = old_reverse(viewname, urlconf=urlconf, args=args, kwargs=kwargs, prefix=prefix, current_app=current_app)
+    def new_reverse(viewname, urlconf=None, args=None, kwargs=None, current_app=None):
+        path = old_reverse(
+            viewname, urlconf=urlconf, args=args, kwargs=kwargs, current_app=current_app
+        )
         if is_absolute_url(path):
             return path
 
         return settings.SITE_URL + path
 
-    urlresolvers._patched = True
-    urlresolvers.reverse = new_reverse
+    resolver._patched = True
+    resolver.reverse = new_reverse

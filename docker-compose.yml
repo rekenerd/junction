@@ -1,30 +1,49 @@
-redis:
-  image: redis:2.8.17
-  volumes:
-    - /var/docker/junction/redis/:/data/
-  ports:
-    - "6380:6379"
-  privileged: true
+version: '3.8'
 
-web:
-  build: .
-  command: python manage.py runserver 0.0.0.0:8000
-  volumes:
-   - .:/srv/
-  links:
-   - redis:redis
-  ports:
-   - "8000:8000"
-  privileged: true
+services:
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
 
-celery:
-  image: junction_web
-  command: celery worker -A junction -l info
-  volumes:
-   - .:/srv/
-  links:
-   - redis:redis
-   - web:web
-  environment:
-   - C_FORCE_ROOT=true
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    restart: always
+    command: sh -c 'redis-server --requirepass ${REDIS_HOST_PASSWORD}'
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: junction_local
+    volumes:
+      - .:/code
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+    command: sh -c 'python manage.py migrate && python manage.py runsslserver 0.0.0.0:${SERVER_PORT}'
+
+  celery:
+    image: junction_local
+    depends_on:
+      - db
+      - redis
+      - web
+    restart: always
+    env_file:
+      - .env
+    command: sh -c 'celery -A junction worker -l info -E'
+
+volumes:
+  postgres_data:

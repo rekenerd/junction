@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load bootstrap3 %}
-{% load django_markdown %}
-{% load static from staticfiles %}
+{% load markdown_deux_tags %}
+
+{% load static  %}
 {% load django_bootstrap_breadcrumbs %}
 
 {% block head_title %}{{ proposal.title }} | {{ proposal.conference.name }} {% endblock %}
@@ -24,7 +25,7 @@
 {% endblock %}
 
 {% block navbar_logo %}
-    {% if conference.logo %}
+    {% if proposal.conference.logo %}
     <a href="{% url "conference-detail" conference.slug %}">
         <img src="{{ conference.logo.url }}">
     </a>
@@ -51,7 +52,7 @@
                               {{ proposal.author.username }}
                           {% endif %}
                           </b> |&nbsp;
-                    <i class="fa fa-calendar"></i> <b> <time datetime="{{ proposal.created_at|date:'c' }}" title="Created On">{{ proposal.created_at|date:"d M, Y" }}</time></b>
+                    <i class="fa fa-calendar"></i> <b> <time datetime="{{ proposal.created_at|date:'c' }}" title="Created on {{ proposal.created_at|date:'d M Y, H:i' }}">{{ proposal.created_at|date:"d M, Y" }}</time></b>
                 </small>
             </p>
 
@@ -77,6 +78,12 @@
                         <i class="fa fa-comments-o"></i>
                     </a>
                 </div>
+            {% endif %}
+
+            {% if proposal.is_first_time_speaker %}
+            {% if is_author or is_reviewer or user.is_superuser %}
+            <span class="label label-info">First Time Speaker</span>
+            {% endif %}
             {% endif %}
 
             {% comment %}
@@ -127,28 +134,40 @@
         <section class="col-sm-8 proposal-writeup">
           <div class="proposal-writeup--section">
             <h4 class='heading'><b>Description:</b></h4>
-            <p>{{ proposal.description|markdown }}</p>
+            <p>{{ proposal.description|markdown|safe }}</p>
           </div>
 
           {% if proposal.prerequisites %}
           <div class="proposal-writeup--section">
             <h4 class='heading'><b>Prerequisites:</b></h4>
-            <p>{{ proposal.prerequisites|markdown }}</p>
+            <p>{{ proposal.prerequisites|markdown|safe }}</p>
+          </div>
+          {% endif %}
+
+          {% if proposal.video_url %}
+          <div class="proposal-writeup--section">
+            <h4 class='heading'><b>Video URL:</b></h4>
+            <p>{{ proposal.video_url|markdown|safe }}</p>
           </div>
           {% endif %}
 
           {% if proposal.content_urls %}
+          {% if not proposal.private_content_urls or is_author or is_reviewer or user.is_authenticated and user.is_superuser %}
           <div class="proposal-writeup--section">
-            <h4 class='heading'><b>Content URLs:</b></h4>
-            <p>{{ proposal.content_urls|markdown }}</p>
+              <h4 class='heading'><b>Content URLs:</b> {% if proposal.private_content_urls %}<span class="label label-info">Private</span>{% endif %}</h4>
+              <p>{{ proposal.content_urls|markdown|safe }}</p>
           </div>
+          {% endif %}
           {% endif %}
 
           {% if is_reviewer or user.is_authenticated and user.is_superuser %}
               <div class="row">
+                  {% if enable_upload_content  %}
                   <a id="upload-content" class='btn btn-primary' href="#">
                       Ask proposer to upload content
                   </a>
+                  {% endif %}
+
                   {% if schedule_item %}
                   <a id="view-feedback" class="btn btn-success"
                      href="{% url 'feedback-detail' schedule_item.id %}">Participants Feedback</a>
@@ -159,23 +178,25 @@
           {% if proposal.speaker_info %}
           <div class="proposal-writeup--section">
             <h4 class='heading'><b>Speaker Info:</b></h4>
-            <p>{{ proposal.speaker_info|markdown }}</p>
+            <p>{{ proposal.speaker_info|markdown|safe }}</p>
           </div>
           {% endif %}
 
           {% if proposal.speaker_links %}
           <div class="proposal-writeup--section">
             <h4 class='heading'><b>Speaker Links:</b></h4>
-            <p>{{ proposal.speaker_links|markdown }}</p>
+            <p>{{ proposal.speaker_links|markdown|safe }}</p>
           </div>
           {% endif %}
 
           {% if is_section_reviewer or user.is_authenticated and user.is_superuser %}
               <div class="proposal-writeup--section">
                   <h4 class='heading'><b>Reviewer Actions:</b></h4>
-                  <a class='btn btn-primary btn-success' href="{{ proposal.get_vote_url }}">
-                      Vote for proposal
-                  </a>
+                  <a class='btn btn-primary btn-success' href="{{ proposal.get_vote_url }}">Vote for proposal</a>
+
+                  {% if enable_second_phase_voting %}
+                    <a class='btn btn-primary btn-success' href="{{ proposal.get_secondary_vote_url }}">Second phase voting</a>
+                  {% endif %}
               </div>
           {% endif %}
 
@@ -206,7 +227,7 @@
                 <tr>
                     <td class="text-muted text-right"><small>Last Updated:</small></td>
                     <td>
-                        <time datetime="{{ proposal.modified_at|date:'c' }}">{{ proposal.modified_at|date:"d M, Y" }}</time>
+                        <time datetime="{{ proposal.modified_at|date:'c' }}" title="{{ proposal.modified_at|date:'d M Y, H:i' }}">{{ proposal.modified_at|date:"d M, Y" }}</time>
                     </td>
                 </tr>
             </table>
@@ -246,9 +267,12 @@
               </ul>
 
               <div class="tab-content padded">
+                  {% if user.is_authenticated %}
                   <div class="tab-pane active" id="js-comments" role="tabpanel">
-                      {% include "proposals/detail/comments.html"%}
+                      {% include "proposals/detail/comments.html" %}
                   </div>
+                  {% endif %}
+
                   {% if read_private_comment %}
                   <div class="tab-pane" id="js-reviewers" role="tabpanel">
                       <span class="alert-info">We hide reviewers information to prevent biased feedback.</span>
